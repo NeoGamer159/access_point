@@ -6,7 +6,12 @@ from machine import Pin
 g_led = Pin('LED', Pin.OUT)
 g_led.off()
 
-
+def blink_led(led: Pin, last_ms, interval_ms=100):
+    now = time.ticks_ms()
+    if time.ticks_diff(now, last_ms) >= interval_ms:
+        led.toggle()
+        return now
+    return last_ms
 
 def load_config(path="config.json"):
     try:
@@ -21,28 +26,23 @@ def load_config(path="config.json"):
 def wait_for_ap(ap, timeout_ms = 5000):
     start = time.ticks_ms()
     while not ap.active():
-        g_led.on()
-        time.sleep(0.1)
-        g_led.off()
+        blink_led(g_led, 0.1)
 
         if time.ticks_diff(time.ticks_ms(), start) > timeout_ms:
             raise RuntimeError("AP failed to start within timeout")
 
 def start_ap():
-    ap = network.WLAN(network.AP_IF) # Create object for access point
+    ap = network.WLAN(network.AP_IF) 
     AP_SSID, AP_PASSWORD = load_config()
+    
     ap.config(essid=AP_SSID, password=AP_PASSWORD)
     ap.active(True)
 
-    while not ap.active():
-        g_led.on()
-        time.sleep(0.1)
-        g_led.off()
+    wait_for_ap(ap)
     
     g_led.off()
 
-    ip_info = ap.ifconfig()
-    ip = ip_info[0]
+    ip = ap.ifconfig()[0]
 
     print("AP live")
     print("SSID:", AP_SSID)
@@ -56,4 +56,5 @@ def main():
     while True:
         time.sleep(1)
 
-main()
+if __name__ == "__main__":
+    main()
