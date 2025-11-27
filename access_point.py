@@ -18,7 +18,15 @@ def load_config(path="config.json"):
         raise RuntimeError("Config.json is missing required fields!")
     return data["ssid"], data["password"]
 
+def wait_for_ap(ap, timeout_ms = 5000):
+    start = time.ticks_ms()
+    while not ap.active():
+        g_led.on()
+        time.sleep(0.1)
+        g_led.off()
 
+        if time.ticks_diff(time.ticks_ms(), start) > timeout_ms:
+            raise RuntimeError("AP failed to start within timeout")
 
 def start_ap():
     ap = network.WLAN(network.AP_IF) # Create object for access point
