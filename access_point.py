@@ -1,15 +1,28 @@
 import network
+import ujson as json
 import time
 from machine import Pin
 
 g_led = Pin('LED', Pin.OUT)
 g_led.off()
 
-AP_SSID = "PicoSetup"
-AP_PASSWORD = "lordakiuM159"
+
+
+def load_config(path="config.json"):
+    try:
+        with open(path, "r") as f:
+            data = json.load(f)
+    except OSError:
+        raise RuntimeError("Missing config.json on device!")
+    if "ssid" not in data or "password" not in data:
+        raise RuntimeError("Config.json is missing required fields!")
+    return data["ssid"], data["password"]
+
+
 
 def start_ap():
     ap = network.WLAN(network.AP_IF) # Create object for access point
+    AP_SSID, AP_PASSWORD = load_config()
     ap.config(essid=AP_SSID, password=AP_PASSWORD)
     ap.active(True)
 
