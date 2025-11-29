@@ -28,6 +28,23 @@ Content-Type: text/html\r
 </body>
 </html>
 """
+def parse_post_body(body: str):
+    params = {}
+    pairs = body.split("&")
+
+    for pair in pairs:
+        if not pair:
+            continue
+        if "=" in pair:
+            key, value = pair.split("=", 1)
+        else:
+            key, value = pair, ""
+        
+        key = key.strip()
+        value = value.replace("+", " ")
+
+        params[key] = value
+    return params
 
 def run_debug_http_server(host="0.0.0.0", port=80):
     addr_info = socket.getaddrinfo(host, port)[0][-1]
@@ -93,6 +110,13 @@ def run_debug_http_server(host="0.0.0.0", port=80):
             full_body = body_bytes.decode()
 
             print("FULL BODY:", full_body)
+
+            params = parse_post_body(full_body)
+            ssid = params.get("ssid", "")
+            password = params.get("password", "")
+
+            print(f"PARSED SSID: {ssid}")
+            print(f"PARSED PASSWORD: {password}")
 
             response = b"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nDiky, request je v REPL.\r\n"
             client_sock.sendall(response)
