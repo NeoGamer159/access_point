@@ -112,13 +112,17 @@ def run_debug_http_server(host="0.0.0.0", port=80):
             print("FULL BODY:", full_body)
 
             params = parse_post_body(full_body)
-            ssid = params.get("ssid", "")
-            password = params.get("password", "")
+            ssid = params.get("ssid", "").strip()
+            password = params.get("password", "").strip()
 
             print(f"PARSED SSID: {ssid}")
             print(f"PARSED PASSWORD: {password}")
 
-            response = b"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nDiky, request je v REPL.\r\n"
+            if ssid and password:
+                save_wifi_config(ssid, password)
+                response = b"""HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nWiFi config saved. You can reboot the device now.\r\n"""
+            else:
+                response = b"""HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\n\r\nMissing ssid or password.\r\n"""
             client_sock.sendall(response)
 
         except Exception as e:
@@ -126,6 +130,15 @@ def run_debug_http_server(host="0.0.0.0", port=80):
 
         finally:
             client_sock.close()
+
+def save_wifi_config(ssid: str, password: str, path: str = "wifi_config.json"):
+    data = {
+        "ssid" : ssid,
+        "password" : password,
+    }
+    with open(path, "w") as f:
+        json.dump(data, f)
+    print(f"Saved wifi config for {ssid}")
 
 def blink_led(led: Pin, last_ms, interval_ms=100):
     now = time.ticks_ms()
