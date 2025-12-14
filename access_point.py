@@ -140,6 +140,43 @@ def save_wifi_config(ssid: str, password: str, path: str = "wifi_config.json"):
         json.dump(data, f)
     print(f"Saved wifi config for {ssid}")
 
+def load_wifi_config(path: str = "wifi_config.json"):
+    try:
+        with open(path, "r") as f:
+            data = json.load(f)
+    except OSError:
+        raise RuntimeError("wifi_config.json not found")
+    
+    if "ssid" not in data or "password" not in data:
+        raise RuntimeError("wifi_config.json is missing required fields")
+    
+    ssid = data["ssid"]
+    password = data["password"]
+
+    if not ssid:
+        raise RuntimeError("WiFi SSID ,ust not be empty")
+    
+    return ssid, password
+
+def connect_sta_from_config(timeout_ms: int = 10000):
+    ssid, password = load_wifi_config()
+
+    sta = network.WLAN(network.STA_IF)
+    sta.active(True)
+    sta.connect(ssid, password)
+
+    print(f"Connecting to WiFi SSID={ssid!r} ...")
+
+    start = time.ticks_ms()
+    while not sta.isconnected():
+        if time.ticks_diff(time.ticks_ms(), start) > timeout_ms:
+            raise RuntimeError("Failed to connect to WiFi within timeout")
+        time.sleep(0.2)
+    
+    ip = sta.ifconfig()[0]
+    print(f"STA connected, IP: {ip}")
+    return sta, ip
+
 def blink_led(led: Pin, last_ms, interval_ms=100):
     now = time.ticks_ms()
     if time.ticks_diff(now, last_ms) >= interval_ms:
@@ -221,11 +258,17 @@ def load_config(path="config.json"):
     return APConfig(ssid=ssid, password=password)
 
 def main():
-    config = load_config()
-    ap = AccessPoint(config, led=g_led, debug=True)
-    ap.start()
+    # config = load_config()
+    # ap = AccessPoint(config, led=g_led, debug=True)
+    # ap.start()
 
-    run_debug_http_server()
-
+    # run_debug_http_server()
+    try:
+        sta, ip = connect_sta_from_config()
+        print(f"Connected, STA IP: {ip}")
+        while True:
+            time.sleep(1)
+    except Exception as e:
+        print(f"STA connect failed: " ,e)
 if __name__ == "__main__":
     main()
