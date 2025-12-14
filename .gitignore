@@ -1,0 +1,22 @@
+#VS code
+.vscode/
+.micropico/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Micropython bytecode
+*.mpy
+
+# Build files
+build/
+
+# Log files
+*.log
+
+# Local setting
+.settings/
+
+# Secret password files
+wifi.json
